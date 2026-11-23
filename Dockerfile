@@ -16,7 +16,8 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
+# Upgrade pip and setuptools to patch CVE-2025-47273 before installing requirements
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" && \
     pip install --no-cache-dir -r requirements.txt
 
 
