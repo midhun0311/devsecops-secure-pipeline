@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Testing & coverage
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Environment & secrets – never commit real values
+.env
+*.env
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (SQLite file is generated at runtime)
+*.db
+*.sqlite3
+
+# Docker build context artifacts
+*.tar
