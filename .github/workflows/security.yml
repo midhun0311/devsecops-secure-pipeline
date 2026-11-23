@@ -1,0 +1,175 @@
+name: Security Pipeline
+
+# Trigger on every push to main, every PR targeting main, and weekly on Monday morning.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"   # Every Monday 06:00 UTC
+
+# Global least-privilege permissions – individual jobs add only what they need.
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Run tests with coverage ───────────────────────────────────────────
+  tests:
+    name: "Tests & Coverage"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runtime + dev dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run pytest with coverage
+        # --cov-fail-under=80 means the job fails if coverage drops below 80 %.
+        run: pytest --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=80
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+
+  # ── 2. Lint, type-check, and Bandit SAST ────────────────────────────────
+  lint-and-types:
+    name: "Lint, Types & Bandit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dev tools
+        run: pip install ruff mypy bandit
+
+      - name: Ruff – lint and format check
+        run: ruff check . --output-format=github
+
+      - name: Mypy – type checking
+        run: mypy app/
+
+      - name: Bandit – Python SAST (medium+ issues fail the build)
+        run: bandit -r app/ -ll -ii
+
+  # ── 3. Semgrep SAST (OWASP Top 10 rules) ────────────────────────────────
+  sast-semgrep:
+    name: "SAST – Semgrep"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # needed to upload SARIF to GitHub Security tab
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/default
+            p/owasp-top-ten
+            p/python
+        env:
+          # SEMGREP_APP_TOKEN is optional for open-source rules.
+          # If present it uploads results to the Semgrep dashboard.
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+  # ── 4. CodeQL deep semantic analysis ─────────────────────────────────────
+  codeql:
+    name: "SAST – CodeQL"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # security-and-quality ruleset catches both security bugs and code quality issues.
+          queries: security-and-quality
+
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ── 5. Dependency vulnerability scan (SCA) ───────────────────────────────
+  deps-pip-audit:
+    name: "SCA – pip-audit"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit runtime dependencies
+        # Fails the build if any known CVE is found in requirements.txt.
+        # To ignore a specific CVE add: --ignore-vuln GHSA-xxxx-yyyy-zzzz
+        # and document the reason in the README Triage section.
+        run: pip-audit -r requirements.txt --strict
+
+  # ── 6. Secret detection across full git history ───────────────────────────
+  secrets-gitleaks:
+    name: "Secrets – Gitleaks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        # fetch-depth: 0 fetches ALL commits so Gitleaks can scan historical secrets too.
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── 7. Container vulnerability and misconfiguration scan ─────────────────
+  container-trivy:
+    name: "Container – Trivy"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-notes:ci .
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "secure-notes:ci"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          # Fail the build on HIGH or CRITICAL vulnerabilities.
+          exit-code: "1"
+          severity: "HIGH,CRITICAL"
+          ignore-unfixed: true   # ignore issues with no fix available yet
+
+      - name: Upload Trivy SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()   # upload even if the scan step failed, so results are visible
+        with:
+          sarif_file: "trivy-results.sarif"
