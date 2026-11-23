@@ -1,0 +1,8 @@
+# Code Owners – every PR must be approved by the owner listed here.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for all files
+* @midhun0311
+
+# Workflow changes require extra scrutiny
+.github/workflows/ @midhun0311
