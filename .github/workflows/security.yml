@@ -98,14 +98,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: python
           # security-and-quality ruleset catches both security bugs and code quality issues.
           queries: security-and-quality
 
       - name: Run CodeQL analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
   # ── 5. Dependency vulnerability scan (SCA) ───────────────────────────────
   deps-pip-audit:
@@ -176,7 +176,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()   # upload even if the scan step failed, so results are visible
         with:
           sarif_file: "trivy-results.sarif"
