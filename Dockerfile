@@ -16,18 +16,25 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-# Upgrade pip and setuptools, install requirements, then remove build tools
-RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" && \
+# Install dependencies, then remove build tools from venv
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    pip uninstall -y setuptools pip
+    pip uninstall -y setuptools pip || true && \
+    rm -rf /opt/venv/lib/python3.12/site-packages/setuptools* \
+           /opt/venv/lib/python3.12/site-packages/pip*
 
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
 
-# Apply security updates to base OS packages and upgrade/remove global setuptools to eliminate CVE-2025-47273
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir --upgrade "setuptools>=78.1.1" || true
+# Security hardening:
+# 1. Update OS packages
+# 2. Remove build tools (setuptools, pip) from base image to eliminate CVE-2025-47273
+RUN apt-get update && apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/* \
+           /usr/local/lib/python3.12/site-packages/setuptools* \
+           /usr/local/lib/python3.12/site-packages/pip* \
+           /usr/local/bin/pip*
 
 # Non-root user with minimal privilege
 RUN groupadd --gid 10001 appgroup && \
@@ -35,7 +42,7 @@ RUN groupadd --gid 10001 appgroup && \
 
 WORKDIR /app
 
-# Copy the pre-built venv from the builder stage
+# Copy the pre-built venv from the builder stage (cleaned of pip and setuptools)
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
