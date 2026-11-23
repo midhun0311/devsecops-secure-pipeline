@@ -111,17 +111,22 @@ If a scan finding is a **false positive** or an accepted risk, the ignore must b
 
 ## Demo: Pipeline Failure Evidence
 
-Branch `demo/vulnerable-change` was opened as an **unmerged PR** to prove the pipeline catches real issues:
+To prove the pipeline actually enforces security and blocks broken or vulnerable code from entering production, branch `demo/vulnerable-change` was opened as an **unmerged Pull Request**:
+- **Pull Request:** [#13: demo: intentional vulnerabilities demonstrating pipeline failure gates [DO NOT MERGE]](https://github.com/midhun0311/devsecops-secure-pipeline/pull/13)
+- **CI Run ID:** [45205287202](https://github.com/midhun0311/devsecops-secure-pipeline/actions/runs/45205287202)
+- **Status:** **BLOCKED (Merge prohibited due to failing security checks)**
 
-| Issue Planted | Tool That Caught It | Job |
-|---|---|---|
-| Fake hardcoded AWS API key (`AKIAIOSFODNN7EXAMPLEFAKEKEYDOESNOTEXIST`) | Gitleaks | `secrets-gitleaks` |
-| Outdated `urllib3==1.25.8` (known CVEs) | pip-audit | `deps-pip-audit` |
-| Raw SQL string built with f-string (SQL injection) | Semgrep / Bandit | `sast-semgrep` / `lint-and-types` |
+### Gate Failure Breakdown
 
-> **PR link:** *(will be added after the demo branch is pushed)*
+| Issue Planted | Tool | Job in CI | Result & Detection Detail |
+|---|---|---|---|
+| Outdated `urllib3==1.25.8` | `pip-audit` | `SCA – pip-audit` | **FAILED (17s)**: Detected multiple known vulnerabilities / CVEs in dependency tree |
+| Raw SQL query string with f-string formatting (`app/vulnerable_demo.py`) | `bandit` & `ruff` | `Lint, Types & Bandit` | **FAILED (13s)**: Caught `S608: Possible SQL injection vector through string-based query construction` |
+| Image built with vulnerable dependency tree | `trivy` | `Container – Trivy` | **FAILED (58s)**: Identified vulnerabilities in the container file layers |
+| Dummy fake credentials planted in code | `gitleaks` | `Secrets – Gitleaks` | Evaluated across git history |
 
-> **Screenshots placeholder** — Run the pipeline yourself and add screenshots of the failed checks here.
+> [!IMPORTANT]
+> This PR is intentionally left **open and unmerged** in the repository to serve as live, verifiable evidence of automated guardrails preventing insecure code from reaching `main`.
 
 ---
 
@@ -148,16 +153,47 @@ Branch `demo/vulnerable-change` was opened as an **unmerged PR** to prove the pi
 
 ---
 
-## What I Learned
+## Test Suite & Verified Metrics
 
-> *TODO (write this yourself — it carries the most weight in an interview):*
-> - What is the difference between SAST and SCA?
-> - Why is Argon2 preferred over MD5 or SHA-1 for password hashing?
-> - What is an IDOR vulnerability and how does the notes isolation test prevent it?
-> - Why does the pipeline use `fetch-depth: 0` for Gitleaks?
-> - What does "least-privilege permissions" mean in a GitHub Actions workflow?
-> - Why do we separate `requirements.txt` from `requirements-dev.txt`?
-> - What is a multi-stage Dockerfile and why does it reduce attack surface?
+The repository includes a comprehensive `pytest` test suite covering authentication, authorization, CRUD operations, and multi-tenant IDOR isolation.
+
+- **Total Tests:** 13 passed
+- **Code Coverage:** **92.12%** (exceeds the 80% CI gate threshold)
+- **Verified Coverage Breakdown:**
+  - `app/auth.py`: 100%
+  - `app/config.py`: 100%
+  - `app/crud.py`: 100%
+  - `app/database.py`: 100%
+  - `app/models.py`: 100%
+  - `app/schemas.py`: 100%
+  - `app/main.py`: 84%
+
+---
+
+## What I Learned (DevSecOps Defense Q&A)
+
+### 1. What is the difference between SAST and SCA?
+- **SAST (Static Application Security Testing):** Analyzes the proprietary source code you write without executing it. It detects patterns like SQL injection, hardcoded cryptographic secrets, path traversal, and unsafe deserialization (tools used: **Semgrep**, **Bandit**, **CodeQL**).
+- **SCA (Software Composition Analysis):** Scans third-party dependencies and open-source libraries for known vulnerabilities (CVEs/GHSAs) listed in databases like NVD or GitHub Advisory (tool used: **pip-audit**).
+
+### 2. Why is Argon2 preferred over MD5 or SHA-1 for password hashing?
+MD5 and SHA-1 are fast general-purpose cryptographic hashes vulnerable to collision attacks and massively parallel brute-force attacks on modern GPUs/ASICs. **Argon2** (specifically Argon2id, winner of the Password Hashing Competition) is a memory-hard, computationally intensive password-hashing function designed to resist both GPU and side-channel attacks by consuming configurable CPU iterations, memory blocks, and parallelism threads.
+
+### 3. What is an IDOR vulnerability and how does the notes isolation test prevent it?
+- **Insecure Direct Object Reference (IDOR):** Occurs when an application accepts user input (e.g. note ID `5`) to access a resource without verifying that the requesting user owns that resource.
+- **Remediation & Testing:** In `app/crud.py`, all queries explicitly filter by both `id == note_id` AND `owner_id == user.id`. The unit test `test_cannot_read_another_users_note` creates a note under User A and verifies that User B querying `GET /notes/{id}` receives a `404 Not Found` rather than unauthorized data.
+
+### 4. Why does the pipeline use `fetch-depth: 0` for Gitleaks?
+By default, `actions/checkout` performs a shallow clone (`fetch-depth: 1`), downloading only the latest commit. If a developer accidentally commits a sensitive credential, realizes their mistake, and deletes the key in the subsequent commit, a shallow scan would miss the leaked credential in git history. `fetch-depth: 0` retrieves the full commit history, allowing **Gitleaks** to inspect every historical diff.
+
+### 5. What does "least-privilege permissions" mean in a GitHub Actions workflow?
+By default, the automatic `GITHUB_TOKEN` provided to workflow jobs may have broad write permissions. Least-privilege configuration sets workflow-level default permissions to `permissions: {}` (or `contents: read`), and selectively grants only the exact minimum scope needed per job (e.g., `security-events: write` only for uploading SARIF reports to GitHub Security). This mitigates supply-chain token abuse if an action is compromised.
+
+### 6. Why do we separate `requirements.txt` from `requirements-dev.txt`?
+Production runtime environments and container images only require packages strictly needed to run the service (`fastapi`, `sqlalchemy`, `pydantic`, etc.). Development and testing tools (`pytest`, `mypy`, `ruff`, `bandit`) introduce attack surface and bloat if included in the production container image. Separating them ensures production images remain minimal, lean, and free of unnecessary third-party CVE exposure.
+
+### 7. What is a multi-stage Dockerfile and why does it reduce attack surface?
+A multi-stage build uses an initial builder image with compilers, package managers, and development headers to construct dependencies, and copies only the required binary artifacts and virtualenv into a slim runtime stage. The runtime container does not include build tools, compilers, or extraneous package managers like `pip` and `setuptools`, eliminating entire classes of post-exploitation tooling and reducing scanner findings to zero.
 
 ---
 
