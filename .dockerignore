@@ -1,0 +1,22 @@
+# Files to exclude from the Docker build context
+# Keeping the context small speeds up builds and avoids accidentally
+# copying secrets or test artefacts into the image layer.
+
+.git/
+.gitignore
+.env
+.env.*
+*.db
+*.sqlite3
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+tests/
+*.md
+.github/
+htmlcov/
+.coverage
+coverage.xml
+requirements-dev.txt
+pyproject.toml
