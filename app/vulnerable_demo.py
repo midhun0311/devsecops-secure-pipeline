@@ -4,17 +4,18 @@ app/vulnerable_demo.py – INTENTIONALLY INSECURE demo file.
 THIS FILE LIVES ONLY ON THE demo/vulnerable-change BRANCH.
 IT MUST NEVER BE MERGED TO MAIN.
 
-This demonstrates three security pipeline gates failing:
-1. Secret Detection: Gitleaks catches hardcoded fake API key pattern.
+This demonstrates four security pipeline gates failing:
+1. Secret Detection: Gitleaks catches hardcoded dummy secrets.
 2. SAST: Semgrep & Bandit catch string-interpolated SQL injection.
 3. SCA: pip-audit catches outdated vulnerable dependency in requirements.txt.
 """
 
 import sqlite3
 
-# ── Issue 1: Hardcoded fake API key (catches via Gitleaks) ───────────────────
-# Dummy key matching AWS credential regex pattern.
-AWS_SECRET_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLEFAKEKEYDOESNOTEXIST"  # noqa: S105
+# ── Issue 1: Hardcoded dummy secrets (catches via Gitleaks) ───────────────────
+# Official AWS documentation dummy key:
+AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+GITHUB_TOKEN = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 
 def search_notes_vulnerable(db_path: str, search_term: str) -> list:
