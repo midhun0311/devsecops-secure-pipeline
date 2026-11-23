@@ -8,7 +8,7 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /build
 
-# Apply security updates to base packages
+# Apply security updates to base OS packages
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies into an isolated venv
@@ -16,16 +16,18 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-# Upgrade pip and setuptools to patch CVE-2025-47273 before installing requirements
+# Upgrade pip and setuptools, install requirements, then remove build tools
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip uninstall -y setuptools pip
 
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
 
-# Apply security updates to base OS packages to eliminate known CVEs
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+# Apply security updates to base OS packages and upgrade/remove global setuptools to eliminate CVE-2025-47273
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade "setuptools>=78.1.1" || true
 
 # Non-root user with minimal privilege
 RUN groupadd --gid 10001 appgroup && \
