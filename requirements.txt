@@ -3,7 +3,7 @@
 # Versions selected to have prebuilt wheels for Python 3.14 (no C compiler needed).
 
 fastapi==0.115.12
-uvicorn[standard]==0.34.3
+uvicorn[standard]==0.54.0
 sqlalchemy==2.0.41
 pydantic==2.14.4
 pydantic-settings==2.9.1
