@@ -10,6 +10,8 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "N", "S", "B", "UP"]
 ignore = [
     "S101",   # assert is fine in tests
+    "S105",   # false positives on token_type / config variable names
+    "B008",   # FastAPI Depends() in function parameter defaults
 ]
 
 [tool.mypy]

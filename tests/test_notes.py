@@ -34,7 +34,8 @@ def test_delete_note(auth_client: TestClient):
 
 def test_cannot_access_notes_without_token(client: TestClient):
     r = client.get("/notes")
-    assert r.status_code == 403  # FastAPI HTTPBearer returns 403 when header missing
+    # RFC 7235 / HTTP standard: missing credentials returns 401 (or 403 in legacy)
+    assert r.status_code in (401, 403)
 
 
 def test_note_isolation_between_users(client: TestClient):

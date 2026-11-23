@@ -2,7 +2,7 @@
 app/models.py – SQLAlchemy ORM table definitions.
 
 WHY: Defining tables as Python classes (ORM) lets SQLAlchemy auto-generate
-parameterised SQL, which prevents SQL injection.  We never build raw SQL strings.
+parameterised SQL, which prevents SQL injection. We never build raw SQL strings.
 """
 
 from datetime import datetime
@@ -23,7 +23,9 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     # One user owns many notes; deleting a user removes their notes too.
-    notes: Mapped[list["Note"]] = relationship("Note", back_populates="owner", cascade="all, delete")
+    notes: Mapped[list["Note"]] = relationship(
+        "Note", back_populates="owner", cascade="all, delete"
+    )
 
 
 class Note(Base):

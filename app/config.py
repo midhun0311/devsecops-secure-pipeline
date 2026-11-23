@@ -11,7 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Loaded from env or .env file; never from a default in production.
-    secret_key: str = "INSECURE-dev-only-change-me"
+    # Must be at least 32 bytes for HMAC-SHA256 (RFC 7518 Section 3.2).
+    secret_key: str = "insecure-dev-only-secret-key-must-be-32-bytes-long"  # noqa: S105
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     database_url: str = "sqlite:///./notes.db"

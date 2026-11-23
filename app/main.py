@@ -8,17 +8,16 @@ Route organisation:
   /notes/*       – CRUD for the authenticated user's notes
 """
 
+import jwt
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError
 from sqlalchemy.orm import Session
 
-from app import crud, schemas
-from app.auth import create_access_token, verify_password, decode_token
+from app import crud, models, schemas
+from app.auth import create_access_token, decode_token, verify_password
 from app.database import Base, engine, get_db
 
 # Create all tables on startup if they do not exist yet.
-# In production you would use Alembic migrations instead.
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Secure Notes API", version="1.0.0")
@@ -38,24 +37,30 @@ def get_current_username(
     """
     try:
         return decode_token(credentials.credentials)
-    except JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from None
 
 
 # ── Public endpoints ─────────────────────────────────────────────────────────
 
+
 @app.get("/health", tags=["meta"])
-def health():
+def health() -> dict[str, str]:
     """Liveness probe – used by Docker/k8s and the CI pipeline."""
     return {"status": "ok"}
 
 
-@app.post("/register", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED, tags=["auth"])
-def register(data: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post(
+    "/register",
+    response_model=schemas.UserOut,
+    status_code=status.HTTP_201_CREATED,
+    tags=["auth"],
+)
+def register(data: schemas.UserCreate, db: Session = Depends(get_db)) -> models.User:
     """Create a new user account with a hashed password."""
     if crud.get_user_by_username(db, data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
@@ -63,7 +68,7 @@ def register(data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/login", response_model=schemas.Token, tags=["auth"])
-def login(data: schemas.UserCreate, db: Session = Depends(get_db)):
+def login(data: schemas.UserCreate, db: Session = Depends(get_db)) -> dict[str, str]:
     """
     Validate credentials and return a JWT.
 
@@ -78,11 +83,12 @@ def login(data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 # ── Protected note endpoints ──────────────────────────────────────────────────
 
+
 @app.get("/notes", response_model=list[schemas.NoteOut], tags=["notes"])
 def list_notes(
     username: str = Depends(get_current_username),
     db: Session = Depends(get_db),
-):
+) -> list[models.Note]:
     """Return all notes belonging to the authenticated user."""
     user = crud.get_user_by_username(db, username)
     if not user:
@@ -90,12 +96,17 @@ def list_notes(
     return crud.get_notes_for_user(db, user.id)
 
 
-@app.post("/notes", response_model=schemas.NoteOut, status_code=status.HTTP_201_CREATED, tags=["notes"])
+@app.post(
+    "/notes",
+    response_model=schemas.NoteOut,
+    status_code=status.HTTP_201_CREATED,
+    tags=["notes"],
+)
 def create_note(
     data: schemas.NoteCreate,
     username: str = Depends(get_current_username),
     db: Session = Depends(get_db),
-):
+) -> models.Note:
     """Create a new note owned by the authenticated user."""
     user = crud.get_user_by_username(db, username)
     if not user:
@@ -109,7 +120,7 @@ def update_note(
     data: schemas.NoteUpdate,
     username: str = Depends(get_current_username),
     db: Session = Depends(get_db),
-):
+) -> models.Note:
     """Update title or content of a note. Only the owner may edit it."""
     user = crud.get_user_by_username(db, username)
     if not user:
@@ -125,7 +136,7 @@ def delete_note(
     note_id: int,
     username: str = Depends(get_current_username),
     db: Session = Depends(get_db),
-):
+) -> None:
     """Delete a note. Only the owner may delete it."""
     user = crud.get_user_by_username(db, username)
     if not user:

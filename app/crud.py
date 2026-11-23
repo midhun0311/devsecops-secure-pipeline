@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.auth import hash_password
 
-
 # ── User operations ──────────────────────────────────────────────────────────
+
 
 def get_user_by_username(db: Session, username: str) -> models.User | None:
     """Return the User row matching *username*, or None if not found."""
@@ -29,6 +29,7 @@ def create_user(db: Session, data: schemas.UserCreate) -> models.User:
 
 
 # ── Note operations ──────────────────────────────────────────────────────────
+
 
 def get_notes_for_user(db: Session, owner_id: int) -> list[models.Note]:
     """Return all notes owned by *owner_id* – never another user's notes."""

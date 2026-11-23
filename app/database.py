@@ -7,8 +7,10 @@ Using check_same_thread=False is required for SQLite with FastAPI because
 requests can span multiple threads.
 """
 
+from collections.abc import Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
@@ -24,10 +26,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     """All ORM models inherit from this class."""
+
     pass
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     """FastAPI dependency that yields a DB session and closes it on exit."""
     db = SessionLocal()
     try:
