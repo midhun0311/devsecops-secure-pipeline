@@ -4,7 +4,7 @@
 # Stage 2 (runtime): copy only the venv and app source – minimal attack surface
 
 # ── Stage 1: builder ────────────────────────────────────────────────────────
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /build
 
@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
-FROM python:3.12-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 # Security hardening:
 # 1. Update OS packages
