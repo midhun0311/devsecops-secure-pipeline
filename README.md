@@ -128,6 +128,9 @@ To prove the pipeline actually enforces security and blocks broken or vulnerable
 > [!IMPORTANT]
 > This PR is intentionally left **open and unmerged** in the repository to serve as live, verifiable evidence of automated guardrails preventing insecure code from reaching `main`.
 
+> [!NOTE]
+> **About PR #12:** An earlier iteration of the same demo branch (`demo/vulnerable-change`) was accidentally merged during development. The vulnerable files it introduced (`app/vulnerable_demo.py`, `urllib3==1.25.8`) were removed in commit `30ce274` within the same session. The current `main` branch contains none of that code — verified by `pip-audit`, `gitleaks`, and `trivy` all passing on every push. PR #13 is the correctly unmerged, permanent demo.
+
 ---
 
 ## API Endpoints
