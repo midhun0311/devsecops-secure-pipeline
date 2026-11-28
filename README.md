@@ -4,7 +4,7 @@
 [![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](https://github.com/midhun0311/devsecops-secure-pipeline/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **B.Tech Cyber Security Portfolio Project** — built Nov 23–28, 2026.
+> **B.Tech Cyber Security Portfolio Project**
 > Demonstrates a complete Secure SDLC with 7 automated security gates enforced on every commit via GitHub Actions.
 
 A small but realistic **FastAPI notes API** paired with a full **GitHub Actions DevSecOps pipeline**. Every push triggers 7 parallel security checks: SAST (Semgrep + CodeQL + Bandit), SCA (pip-audit), secret scanning (Gitleaks), container scanning (Trivy), and unit tests with 92% coverage. A live unmerged demo PR proves the gates actively block vulnerable code.
@@ -138,16 +138,32 @@ To prove the pipeline actually enforces security and blocks broken or vulnerable
 
 ---
 
-## Pipeline Evidence (Live Links)
+## Pipeline Evidence
 
-| Evidence | Link |
-|---|---|
-| ✅ Latest green CI run on `main` | [Run #46133039977 — all 7 jobs passed](https://github.com/midhun0311/devsecops-secure-pipeline/actions/runs/46133039977) |
-| ❌ Demo PR #13 — blocked by 3 failed gates | [Pull Request #13 — open, unmerged, failing](https://github.com/midhun0311/devsecops-secure-pipeline/pull/13) |
-| 🔒 GitHub Security tab | [Security & code scanning alerts](https://github.com/midhun0311/devsecops-secure-pipeline/security) |
-| 📜 Commit history | [All commits on main](https://github.com/midhun0311/devsecops-secure-pipeline/commits/main) |
+### 1. Passing CI Pipeline on `main` (All 7 Security Gates Green)
+All 7 security jobs passing on `main` ([Run #46133039977](https://github.com/midhun0311/devsecops-secure-pipeline/actions/runs/46133039977)):
+- Tests & Coverage (`pytest` + `pytest-cov`, 92.12%)
+- Lint, Types & Bandit (`ruff`, `mypy`, `bandit`)
+- SAST – Semgrep (OWASP Top 10)
+- SAST – CodeQL (deep semantic taint analysis)
+- SCA – pip-audit (0 known CVEs)
+- Secrets – Gitleaks (full commit history)
+- Container – Trivy (0 HIGH/CRITICAL vulnerabilities)
 
-> Screenshots of these pages are stored in [`docs/screenshots/`](docs/screenshots/) and will be added once captured.
+![Passing CI Pipeline](docs/screenshots/ci-main-green.png)
+
+### 2. Blocked Demo PR #13 (Failure Gates Enforced)
+Live proof of the pipeline actively blocking vulnerable code from merging into `main` ([Pull Request #13](https://github.com/midhun0311/devsecops-secure-pipeline/pull/13)):
+- `pip-audit` failed on outdated `urllib3==1.25.8`
+- `bandit` & `ruff` failed on raw SQL query construction (`S608`)
+- `trivy` failed on container package scan
+
+![Demo PR #13 Blocked Checks](docs/screenshots/pr13-failed-checks.png)
+
+### 3. GitHub Security Overview
+Repository security status and automated alert monitoring ([Security Tab](https://github.com/midhun0311/devsecops-secure-pipeline/security)):
+
+![GitHub Security Tab](docs/screenshots/security-tab.png)
 
 ---
 
