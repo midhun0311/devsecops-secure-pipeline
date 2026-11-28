@@ -1,8 +1,13 @@
 # Secure Notes API — DevSecOps Portfolio Project
 
 [![Security Pipeline](https://github.com/midhun0311/devsecops-secure-pipeline/actions/workflows/security.yml/badge.svg)](https://github.com/midhun0311/devsecops-secure-pipeline/actions/workflows/security.yml)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen)](https://github.com/midhun0311/devsecops-secure-pipeline/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A small but realistic **FastAPI notes API** paired with a full **GitHub Actions DevSecOps pipeline**. Built as a portfolio project for a B.Tech Cyber Security student to demonstrate secure SDLC practices end-to-end.
+> **B.Tech Cyber Security Portfolio Project** — built Nov 23–28, 2026.
+> Demonstrates a complete Secure SDLC with 7 automated security gates enforced on every commit via GitHub Actions.
+
+A small but realistic **FastAPI notes API** paired with a full **GitHub Actions DevSecOps pipeline**. Every push triggers 7 parallel security checks: SAST (Semgrep + CodeQL + Bandit), SCA (pip-audit), secret scanning (Gitleaks), container scanning (Trivy), and unit tests with 92% coverage. A live unmerged demo PR proves the gates actively block vulnerable code.
 
 ---
 
@@ -133,6 +138,19 @@ To prove the pipeline actually enforces security and blocks broken or vulnerable
 
 ---
 
+## Pipeline Evidence (Live Links)
+
+| Evidence | Link |
+|---|---|
+| ✅ Latest green CI run on `main` | [Run #46133039977 — all 7 jobs passed](https://github.com/midhun0311/devsecops-secure-pipeline/actions/runs/46133039977) |
+| ❌ Demo PR #13 — blocked by 3 failed gates | [Pull Request #13 — open, unmerged, failing](https://github.com/midhun0311/devsecops-secure-pipeline/pull/13) |
+| 🔒 GitHub Security tab | [Security & code scanning alerts](https://github.com/midhun0311/devsecops-secure-pipeline/security) |
+| 📜 Commit history | [All commits on main](https://github.com/midhun0311/devsecops-secure-pipeline/commits/main) |
+
+> Screenshots of these pages are stored in [`docs/screenshots/`](docs/screenshots/) and will be added once captured.
+
+---
+
 ## API Endpoints
 
 | Method | Path | Auth | Description |
@@ -197,6 +215,29 @@ Production runtime environments and container images only require packages stric
 
 ### 7. What is a multi-stage Dockerfile and why does it reduce attack surface?
 A multi-stage build uses an initial builder image with compilers, package managers, and development headers to construct dependencies, and copies only the required binary artifacts and virtualenv into a slim runtime stage. The runtime container does not include build tools, compilers, or extraneous package managers like `pip` and `setuptools`, eliminating entire classes of post-exploitation tooling and reducing scanner findings to zero.
+
+---
+
+## Commit Timeline
+
+All work was done in a single session with atomic conventional commits:
+
+| Date | Commit | Type |
+|---|---|---|
+| 2026-11-23 | Initialize repository with gitignore, env template, MIT license | `chore` |
+| 2026-11-23 | Pin runtime and dev dependencies for Python 3.14 compatibility | `chore` |
+| 2026-11-23 | Implement secure notes API with FastAPI, SQLite, Argon2, and JWT auth | `feat` |
+| 2026-11-23 | Add pytest suite covering auth, notes CRUD, IDOR isolation (92% coverage) | `test` |
+| 2026-11-23 | Add multi-stage Dockerfile with non-root user and minimal attack surface | `feat` |
+| 2026-11-23 | Add SECURITY.md, CODEOWNERS, dependabot config, PR security checklist | `docs` |
+| 2026-11-23 | Add 7-job security pipeline with least-privilege permissions and caching | `ci` |
+| 2026-11-23 | Address CI findings in pip-audit, ruff, mypy, and trivy-action | `fix` |
+| 2026-11-23 | Update Dockerfile base patches and upgrade Trivy action to v0.36.0 | `fix` |
+| 2026-11-23 | Upgrade setuptools in Dockerfile builder to remediate CVE-2025-47273 | `fix` |
+| 2026-11-23 | Upgrade setuptools in runtime image stage to patch CVE-2025-47273 | `fix` |
+| 2026-11-23 | Purge pip and setuptools from runtime container to remediate CVE-2025-47273 | `fix` |
+| 2026-11-23 | Document verified test metrics, PR #13 failure evidence, defense Q&A | `docs` |
+| 2026-11-28 | Clarify PR #12 accidental merge and remediation in README | `docs` |
 
 ---
 
