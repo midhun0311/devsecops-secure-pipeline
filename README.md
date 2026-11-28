@@ -218,29 +218,6 @@ A multi-stage build uses an initial builder image with compilers, package manage
 
 ---
 
-## Commit Timeline
-
-All work was done in a single session with atomic conventional commits:
-
-| Date | Commit | Type |
-|---|---|---|
-| 2026-11-23 | Initialize repository with gitignore, env template, MIT license | `chore` |
-| 2026-11-23 | Pin runtime and dev dependencies for Python 3.14 compatibility | `chore` |
-| 2026-11-23 | Implement secure notes API with FastAPI, SQLite, Argon2, and JWT auth | `feat` |
-| 2026-11-23 | Add pytest suite covering auth, notes CRUD, IDOR isolation (92% coverage) | `test` |
-| 2026-11-23 | Add multi-stage Dockerfile with non-root user and minimal attack surface | `feat` |
-| 2026-11-23 | Add SECURITY.md, CODEOWNERS, dependabot config, PR security checklist | `docs` |
-| 2026-11-23 | Add 7-job security pipeline with least-privilege permissions and caching | `ci` |
-| 2026-11-23 | Address CI findings in pip-audit, ruff, mypy, and trivy-action | `fix` |
-| 2026-11-23 | Update Dockerfile base patches and upgrade Trivy action to v0.36.0 | `fix` |
-| 2026-11-23 | Upgrade setuptools in Dockerfile builder to remediate CVE-2025-47273 | `fix` |
-| 2026-11-23 | Upgrade setuptools in runtime image stage to patch CVE-2025-47273 | `fix` |
-| 2026-11-23 | Purge pip and setuptools from runtime container to remediate CVE-2025-47273 | `fix` |
-| 2026-11-23 | Document verified test metrics, PR #13 failure evidence, defense Q&A | `docs` |
-| 2026-11-28 | Clarify PR #12 accidental merge and remediation in README | `docs` |
-
----
-
 ## Local Development
 
 ```bash
